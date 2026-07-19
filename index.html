@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Gold Signal Pro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background: #000; 
+            color: #e0e0e0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a0f;
+            position: relative;
+        }
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            padding-top: 12px;
+        }
+        .app-bar {
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(255,215,0,0.1);
+        }
+        .app-title { font-size: 18px; font-weight: 700; color: #FFD700; }
+        .icon-btn {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px;
+            padding-bottom: 90px;
+        }
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .market-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+        }
+        .market-bar::-webkit-scrollbar { height: 0; }
+        .session {
+            flex: 1;
+            min-width: 75px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 8px 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .session.open { border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.05); }
+        .session.closed { opacity: 0.5; }
+        .session-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-bottom: 3px;
+        }
+        .session.open .session-dot { background: #00ff88; }
+        .session.closed .session-dot { background: #ff4444; }
+        .session-name { display: block; color: #888; margin-bottom: 2px; }
+        .session-time { font-size: 10px; color: #666; font-family: monospace; }
+        
+        .materials {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .mat-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #888;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .mat-btn.active {
+            background: rgba(255,215,0,0.1);
+            border-color: rgba(255,215,0,0.3);
+            color: #FFD700;
+        }
+        .mat-icon { font-size: 24px; }
+        
+        .price-box {
+            text-align: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 20px;
+            border: 1px solid rgba(255,215,0,0.1);
+            margin-bottom: 12px;
+        }
+        .price-val {
+            font-size: 36px;
+            font-weight: 700;
+            color: #FFD700;
+            font-family: monospace;
+        }
+        .price-chg { font-size: 14px; font-weight: 500; }
+        .price-chg.up { color: #00ff88; }
+        .price-chg.down { color: #ff4444; }
+        
+        .chart-box {
+            background: rgba(255,255,255,0.02);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .chart-title { font-size: 16px; font-weight: 700; color: #FFD700; }
+        .timeframes { display: flex; gap: 4px; }
+        .tf {
+            padding: 3px 8px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: #555;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .tf.active { background: rgba(255,215,0,0.15); color: #FFD700; }
+        .chart-area {
+            height: 200px;
+            position: relative;
+            background: #08080c;
+        }
+        #chartCanvas { width: 100%; height: 100%; }
+        .chart-labels {
+            position: absolute;
+            top: 8px; right: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-end;
+        }
+        .lbl {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        .lbl.sup { background: rgba(0,255,136,0.1); color: #00ff88; }
+        .lbl.res { background: rgba(255,68,68,0.1); color: #ff4444; }
+        .lbl.ma { background: rgba(255,215,0,0.1); color: #FFD700; }
+        
+        .signals { margin-bottom: 12px; }
+        .sig-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .sig-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border-left: 3px solid;
+        }
+        .sig-card.buy { border-left-color: #00ff88; }
+        .sig-card.sell { border-left-color: #ff4444; }
+        .sig-head {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .sig-type {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .sig-card.buy .sig-type { background: rgba(0,255,136,0.15); color: #00ff88; }
+        .sig-card.sell .sig-type { background: rgba(255,68,68,0.15); color: #ff4444; }
+        .sig-time { font-size: 12px; color: #666; }
+        .sig-details { display: flex; gap: 16px; margin-bottom: 10px; }
+        .sig-item { display: flex; flex-direction: column; }
+        .sig-lbl { font-size: 11px; color: #666; }
+        .sig-val { font-size: 14px; font-weight: 600; color: #fff; font-family: monospace; }
+        .sig-ind { display: flex; gap: 6px; flex-wrap: wrap; }
+        .ind {
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255,215,0,0.08);
+            color: #FFD700;
+            font-size: 11px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .act-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .act-icon { font-size: 24px; }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(10,10,15,0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 10px;
+            z-index: 100;
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            padding: 4px 12px;
+            font-size: 11px;
+        }
+        .nav-btn.active { color: #FFD700; }
+        .nav-btn svg { width: 24px; height: 24px; }
+        
+        /* AI Screen */
+        .ai-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            margin-bottom: 12px;
+        }
+        .ai-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: rgba(255,215,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .ai-info h3 { font-size: 16px; color: #fff; }
+        .ai-status { font-size: 12px; color: #00ff88; }
+        .chat { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; }
+        .msg { max-width: 85%; display: flex; flex-direction: column; gap: 3px; }
+        .msg.ai { align-self: flex-start; }
+        .msg.user { align-self: flex-end; margin-left: auto; }
+        .bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .msg.ai .bubble { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #e0e0e0; }
+        .msg.user .bubble { background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.2); color: #FFD700; }
+        .msg-time { font-size: 11px; color: #555; }
+        .ai-input {
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .quick-prompts { display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; }
+        .prompt {
+            padding: 8px 14px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #aaa;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .input-row { display: flex; gap: 8px; }
+        .chat-inp {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .send {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: #FFD700;
+            border: none;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        /* Prime Screen */
+        .prime-head { text-align: center; padding: 20px 16px; }
+        .prime-icon { font-size: 48px; margin-bottom: 8px; }
+        .prime-head h2 { font-size: 24px; color: #FFD700; }
+        .prime-head p { color: #888; font-size: 14px; }
+        .plans { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+        .plan {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 20px;
+            position: relative;
+        }
+        .plan.featured { background: rgba(255,215,0,0.05); border-color: rgba(255,215,0,0.2); }
+        .plan-badge {
+            position: absolute;
+            top: -1px; right: 20px;
+            padding: 4px 12px;
+            border-radius: 0 0 8px 8px;
+            background: #666;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .plan-badge.best { background: #FFD700; color: #000; }
+        .plan-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .plan-price { margin-bottom: 16px; }
+        .plan-price .cur { font-size: 20px; color: #FFD700; }
+        .plan-price .amt { font-size: 36px; font-weight: 700; color: #FFD700; }
+        .plan-price .per { font-size: 14px; color: #888; }
+        .plan-feat { list-style: none; margin-bottom: 20px; }
+        .plan-feat li { padding: 6px 0; font-size: 14px; color: #ccc; }
+        .plan-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .plan-btn.primary { background: #FFD700; color: #000; border: none; }
+        
+        /* Notif Screen */
+        .notif-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .notif-head h2 { font-size: 20px; }
+        .clear {
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(255,68,68,0.1);
+            border: none;
+            color: #ff4444;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .notif-list { display: flex; flex-direction: column; gap: 8px; }
+        .notif-item {
+            display: flex;
+            gap: 12px;
+            padding: 14px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border-left: 3px solid transparent;
+        }
+        .notif-item.unread { border-left-color: #FFD700; background: rgba(255,215,0,0.03); }
+        .notif-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .notif-content h4 { font-size: 14px; font-weight: 600; }
+        .notif-content p { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .notif-time { font-size: 11px; color: #555; }
+        
+        /* Settings */
+        .set-sec { margin-bottom: 24px; }
+        .set-sec h3 {
+            font-size: 14px;
+            color: #FFD700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .set-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 15px;
+        }
+        .toggle {
+            position: relative;
+            width: 50px; height: 28px;
+        }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #333;
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            height: 22px; width: 22px;
+            left: 3px; bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle input:checked + .toggle-slider { background: #FFD700; }
+        .toggle input:checked + .toggle-slider:before { transform: translateX(22px); background: #000; }
+        .sounds { display: flex; gap: 8px; flex-wrap: wrap; }
+        .snd {
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #888;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .snd.active { background: rgba(255,215,0,0.1); border-color: rgba(255,215,0,0.3); color: #FFD700; }
+        .info { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; }
+        .badge-free { padding: 2px 10px; border-radius: 20px; background: rgba(255,255,255,0.08); color: #aaa; font-size: 12px; }
+        
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 24px;
+            border-radius: 12px;
+            background: rgba(255,215,0,0.9);
+            color: #000;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="status-bar">
+            <span id="clock">9:41</span>
+            <div style="display:flex;gap:6px;">
+                <svg width="16" height="12" viewBox="0 0 16 12"><path fill="currentColor" d="M1 8h2v2H1zm3-1h2v3H4zm3-2h2v5H7zm3-3h2v8h-2zm3-2h2v10h-2z"/></svg>
+                <svg width="20" height="12" viewBox="0 0 20 12"><path fill="currentColor" d="M2 4h16v4H2z"/><rect x="1" y="2" width="18" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </div>
+        </div>
+        
+        <div class="app-bar">
+            <span class="app-title" id="pageTitle">Gold Signal Pro</span>
+            <div style="display:flex;gap:8px;">
+                <button class="icon-btn" onclick="goTo('notif')">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="content" id="content">
+            <!-- HOME -->
+            <div class="screen active" id="home">
+                <div class="market-bar">
+                    <div class="session" id="tokyo"><span class="session-dot"></span><span class="session-name">Tokyo</span><span class="session-time">--</span></div>
+                    <div class="session" id="london"><span class="session-dot"></span><span class="session-name">London</span><span class="session-time">--</span></div>
+                    <div class="session" id="eu"><span class="session-dot"></span><span class="session-name">EU</span><span class="session-time">--</span></div>
+                    <div class="session" id="usa"><span class="session-dot"></span><span class="session-name">USA</span><span class="session-time">--</span></div>
+                </div>
+                
+                <div class="materials">
+                    <button class="mat-btn active" onclick="setMat('gold', this)"><span class="mat-icon">🥇</span><span>Gold</span></button>
+                    <button class="mat-btn" onclick="setMat('silver', this)"><span class="mat-icon">🥈</span><span>Silver</span></button>
+                    <button class="mat-btn" onclick="setMat('oil', this)"><span class="mat-icon">🛢️</span><span>Oil</span></button>
+                </div>
+                
+                <div class="price-box">
+                    <span class="price-val" id="price">2,456.78</span>
+                    <span class="price-chg up" id="change">+12.45 (+0.51%)</span>
+                </div>
+                
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <span class="chart-title" id="pair">XAU/USD</span>
+                        <div class="timeframes">
+                            <button class="tf" onclick="setTF('1m',this)">1m</button>
+                            <button class="tf" onclick="setTF('5m',this)">5m</button>
+                            <button class="tf active" onclick="setTF('15m',this)">15m</button>
+                            <button class="tf" onclick="setTF('1h',this)">1H</button>
+                            <button class="tf" onclick="setTF('4h',this)">4H</button>
+                            <button class="tf" onclick="setTF('1d',this)">1D</button>
+                        </div>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="chartCanvas"></canvas>
+                        <div class="chart-labels">
+                            <span class="lbl sup">Support: 2,440.00</span>
+                            <span class="lbl res">Resistance: 2,465.00</span>
+                            <span class="lbl ma">MA50: 2,448.32</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="signals">
+                    <h3 class="sig-title">Active Signals</h3>
+                    <div class="sig-card buy">
+                        <div class="sig-head">
+                            <span class="sig-type">BUY</span>
+                            <span class="sig-time">2 min ago</span>
+                        </div>
+                        <div class="sig-details">
+                            <div class="sig-item"><span class="sig-lbl">Entry</span><span class="sig-val">2,445.20</span></div>
+                            <div class="sig-item"><span class="sig-lbl">SL</span><span class="sig-val">2,438.00</span></div>
+                            <div class="sig-item"><span class="sig-lbl">TP</span><span class="sig-val">2,460.00</span></div>
+                        </div>
+                        <div class="sig-ind">
+                            <span class="ind">RSI: 45</span>
+                            <span class="ind">MA Cross</span>
+                            <span class="ind">Candle</span>
+                        </div>
+                    </div>
+                    <div class="sig-card sell">
+                        <div class="sig-head">
+                            <span class="sig-type">SELL</span>
+                            <span class="sig-time">15 min ago</span>
+                        </div>
+                        <div class="sig-details">
+                            <div class="sig-item"><span class="sig-lbl">Entry</span><span class="sig-val">2,458.90</span></div>
+                            <div class="sig-item"><span class="sig-lbl">SL</span><span class="sig-val">2,465.00</span></div>
+                            <div class="sig-item"><span class="sig-lbl">TP</span><span class="sig-val">2,440.00</span></div>
+                        </div>
+                        <div class="sig-ind">
+                            <span class="ind">RSI: 72</span>
+                            <span class="ind">Overbought</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button class="act-btn" onclick="goTo('ai')"><span class="act-icon">🤖</span><span>Ask AI</span></button>
+                    <button class="act-btn" onclick="goTo('prime')"><span class="act-icon">💎</span><span>Go Prime</span></button>
+                    <button class="act-btn" onclick="goTo('notif')"><span class="act-icon">🔔</span><span>Alerts</span></button>
+                </div>
+            </div>
+            
+            <!-- AI -->
+            <div class="screen" id="ai">
+                <div class="ai-head">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-info">
+                        <h3>Gold AI Analyst</h3>
+                        <span class="ai-status">● Online</span>
+                    </div>
+                </div>
+                <div class="chat" id="chat">
+                    <div class="msg ai">
+                        <div class="bubble">
+                            <p>Welcome! I'm your Gold trading assistant. I can analyze:</p>
+                            <ul style="margin:8px 0;padding-left:20px;">
+                                <li>Support & Resistance levels</li>
+                                <li>RSI & Moving Averages</li>
+                                <li>Candlestick patterns</li>
+                                <li>Market session impacts</li>
+                            </ul>
+                            <p>What would you like to analyze?</p>
+                        </div>
+                        <span class="msg-time">Now</span>
+                    </div>
+                </div>
+                <div class="ai-input">
+                    <div class="quick-prompts">
+                        <button class="prompt" onclick="quickAsk('Analyze current gold trend')">📈 Analyze Trend</button>
+                        <button class="prompt" onclick="quickAsk('Support and resistance levels')">🎯 S/R Levels</button>
+                        <button class="prompt" onclick="quickAsk('Best entry point now')">⏰ Best Entry</button>
+                    </div>
+                    <div class="input-row">
+                        <input type="text" class="chat-inp" id="chatInput" placeholder="Ask about gold market...">
+                        <button class="send" onclick="sendMsg()">➤</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PRIME -->
+            <div class="screen" id="prime">
+                <div class="prime-head">
+                    <div class="prime-icon">💎</div>
+                    <h2>Go Prime</h2>
+                    <p>Unlock professional trading signals</p>
+                </div>
+                <div class="plans">
+                    <div class="plan">
+                        <div class="plan-badge">Popular</div>
+                        <h3 class="plan-name">Monthly</h3>
+                        <div class="plan-price"><span class="cur">£</span><span class="amt">15</span><span class="per">/month</span></div>
+                        <ul class="plan-feat">
+                            <li>✓ Real-time signals</li>
+                            <li>✓ AI Analysis</li>
+                            <li>✓ Push notifications</li>
+                            <li>✓ All timeframes</li>
+                        </ul>
+                        <button class="plan-btn">Subscribe</button>
+                    </div>
+                    <div class="plan featured">
+                        <div class="plan-badge best">Best Value</div>
+                        <h3 class="plan-name">Lifetime</h3>
+                        <div class="plan-price"><span class="cur">£</span><span class="amt">150</span><span class="per">one-time</span></div>
+                        <ul class="plan-feat">
+                            <li>✓ Everything in Monthly</li>
+                            <li>✓ Lifetime updates</li>
+                            <li>✓ Priority support</li>
+                            <li>✓ Custom alerts</li>
+                            <li>✓ API access</li>
+                        </ul>
+                        <button class="plan-btn primary">Get Lifetime</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NOTIF -->
+            <div class="screen" id="notif">
+                <div class="notif-head">
+                    <h2>Notifications</h2>
+                    <button class="clear" onclick="clearNotif()">Clear All</button>
+                </div>
+                <div class="notif-list" id="notifList">
+                    <div class="notif-item unread">
+                        <div class="notif-icon">🎯</div>
+                        <div class="notif-content">
+                            <h4>Support Level Hit</h4>
+                            <p>Gold touched support at 2,440.00</p>
+                            <span class="notif-time">2 min ago</span>
+                        </div>
+                    </div>
+                    <div class="notif-item unread">
+                        <div class="notif-icon">📊</div>
+                        <div class="notif-content">
+                            <h4>RSI Alert</h4>
+                            <p>RSI reached oversold territory (28)</p>
+                            <span class="notif-time">15 min ago</span>
+                        </div>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-icon">🌍</div>
+                        <div class="notif-content">
+                            <h4>London Session Open</h4>
+                            <p>High volatility expected</p>
+                            <span class="notif-time">1 hour ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SETTINGS -->
+            <div class="screen" id="settings">
+                <div class="set-sec">
+                    <h3>Alert Settings</h3>
+                    <div class="set-item">
+                        <span>Push Notifications</span>
+                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="set-item">
+                        <span>Sound Alerts</span>
+                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="set-item">
+                        <span>Session Warnings</span>
+                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+                <div class="set-sec">
+                    <h3>Alert Sound</h3>
+                    <div class="sounds">
+                        <button class="snd active" onclick="setSound(this)">🔔 Single</button>
+                        <button class="snd" onclick="setSound(this)">🔔🔔 Double</button>
+                        <button class="snd" onclick="setSound(this)">🔔🔔🔔 Triple</button>
+                        <button class="snd" onclick="setSound(this)">🔇 Silent</button>
+                    </div>
+                </div>
+                <div class="set-sec">
+                    <h3>About</h3>
+                    <div class="info"><span>Version</span><span>1.0.0</span></div>
+                    <div class="info"><span>Account</span><span class="badge-free">Free</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-nav">
+            <button class="nav-btn active" onclick="goTo('home')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span>Home</span>
+            </button>
+            <button class="nav-btn" onclick="goTo('ai')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                <span>AI</span>
+            </button>
+            <button class="nav-btn" onclick="goTo('prime')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                <span>Prime</span>
+            </button>
+            <button class="nav-btn" onclick="goTo('settings')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span>Settings</span>
+            </button>
+        </div>
+        
+        <div class="toast" id="toast"></div>
+    </div>
+    
+    <script>
+        let currentScreen = 'home';
+        let currentMat = 'gold';
+        
+        function goTo(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(screen).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach((b, i) => {
+                const screens = ['home','ai','prime','settings'];
+                if(screens[i] === screen) b.classList.add('active');
+            });
+            const titles = {home:'Gold Signal Pro', ai:'Ask AI', prime:'Go Prime', notif:'Notifications', settings:'Settings'};
+            document.getElementById('pageTitle').textContent = titles[screen] || 'Gold Signal Pro';
+            currentScreen = screen;
+        }
+        
+        function setMat(mat, btn) {
+            document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMat = mat;
+            const data = {
+                gold: {price:'2,456.78', chg:'+12.45 (+0.51%)', up:true, pair:'XAU/USD'},
+                silver: {price:'32.45', chg:'+0.23 (+0.71%)', up:true, pair:'XAG/USD'},
+                oil: {price:'78.92', chg:'-0.45 (-0.57%)', up:false, pair:'WTI/USD'}
+            };
+            const d = data[mat];
+            document.getElementById('price').textContent = d.price;
+            const chg = document.getElementById('change');
+            chg.textContent = d.chg;
+            chg.className = 'price-chg ' + (d.up ? 'up' : 'down');
+            document.getElementById('pair').textContent = d.pair;
+            drawChart();
+            showToast('Switched to ' + mat.charAt(0).toUpperCase() + mat.slice(1));
+        }
+        
+        function setTF(tf, btn) {
+            document.querySelectorAll('.tf').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            drawChart();
+        }
+        
+        function drawChart() {
+            const c = document.getElementById('chartCanvas');
+            const ctx = c.getContext('2d');
+            const rect = c.parentElement.getBoundingClientRect();
+            c.width = rect.width;
+            c.height = rect.height;
+            const w = c.width, h = c.height;
+            ctx.fillStyle = '#08080c';
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            for(let i=0;i<6;i++){ctx.beginPath();ctx.moveTo(0,h/6*i);ctx.lineTo(w,h/6*i);ctx.stroke();}
+            for(let i=0;i<10;i++){ctx.beginPath();ctx.moveTo(w/10*i,0);ctx.lineTo(w/10*i,h);ctx.stroke();}
+            const pts = 60;
+            let p = 2450;
+            const data = [];
+            for(let i=0;i<pts;i++){p+=(Math.random()-0.48)*3;data.push(p);}
+            const min = Math.min(...data)-2, max = Math.max(...data)+2, range = max-min;
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((p,i)=>{const x=i/(pts-1)*w,y=h-((p-min)/range)*h*0.8-h*0.1;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
+            ctx.stroke();
+            ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
+            const g = ctx.createLinearGradient(0,0,0,h);
+            g.addColorStop(0,'rgba(255,215,0,0.2)');g.addColorStop(1,'rgba(255,215,0,0)');
+            ctx.fillStyle = g;ctx.fill();
+            data.forEach((p,i)=>{if(i%3===0){const x=i/(pts-1)*w,y=h-((p-min)/range)*h*0.8-h*0.1;ctx.fillStyle=data[i]>data[i-1]?'#00ff88':'#ff4444';ctx.fillRect(x-3,y-3,6,6);}});
+        }
+        
+        function sendMsg() {
+            const inp = document.getElementById('chatInput');
+            const txt = inp.value.trim();
+            if(!txt) return;
+            addMsg(txt, 'user');
+            inp.value = '';
+            setTimeout(() => {
+                const r = ["Based on current analysis, Gold shows bullish momentum above MA50.","RSI at 52, neutral territory. Wait for clearer signal.","London session opened with high volume. Watch for breakout.","Bullish engulfing on 15m. Potential buy opportunity.","Support at 2,440 tested 3 times. Break below drops to 2,425."];
+                addMsg(r[Math.floor(Math.random()*r.length)], 'ai');
+            }, 1000);
+        }
+        
+        function quickAsk(t) { document.getElementById('chatInput').value = t; sendMsg(); }
+        
+        function addMsg(text, sender) {
+            const chat = document.getElementById('chat');
+            const d = document.createElement('div');
+            d.className = 'msg ' + sender;
+            d.innerHTML = '<div class="bubble"><p>' + text + '</p></div><span class="msg-time">Just now</span>';
+            chat.appendChild(d);
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        document.getElementById('chatInput').addEventListener('keypress', e => { if(e.key==='Enter') sendMsg(); });
+        
+        function clearNotif() {
+            document.getElementById('notifList').innerHTML = '<div style="text-align:center;padding:40px;color:#555;">No notifications</div>';
+            showToast('All cleared');
+        }
+        
+        function setSound(btn) {
+            document.querySelectorAll('.snd').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            showToast('Sound: ' + btn.textContent);
+        }
+        
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        }
+        
+        function updateSessions() {
+            const now = new Date();
+            const utc = new Date(now.toISOString());
+            const sessions = [
+                {id:'tokyo',oh:0,om:0,ch:9,cm:0},
+                {id:'london',oh:8,om:0,ch:17,cm:0},
+                {id:'eu',oh:7,om:0,ch:16,cm:0},
+                {id:'usa',oh:13,om:0,ch:22,cm:0}
+            ];
+            sessions.forEach(s => {
+                const el = document.getElementById(s.id);
+                if(!el) return;
+                const open = new Date(Date.UTC(utc.getUTCFullYear(),utc.getUTCMonth(),utc.getUTCDate(),s.oh,s.om));
+                const close = new Date(Date.UTC(utc.getUTCFullYear(),utc.getUTCMonth(),utc.getUTCDate(),s.ch,s.cm));
+                let status, timeStr;
+                if(utc < open) {
+                    const rem = open - utc;
+                    status = Math.floor(rem/60000) <= 30 ? 'opening' : 'closed';
+                    timeStr = 'Opens ' + fmt(rem);
+                } else if(utc > close) {
+                    status = 'closed';
+                    timeStr = 'Closed';
+                } else {
+                    const rem = close - utc;
+                    status = Math.floor(rem/60000) <= 30 ? 'opening' : 'open';
+                    timeStr = 'Closes ' + fmt(rem);
+                }
+                el.className = 'session ' + status;
+                el.querySelector('.session-time').textContent = timeStr;
+            });
+        }
+        
+        function fmt(ms) {
+            const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000), s = Math.floor((ms%60000)/1000);
+            if(h>0) return h+'h '+m+'m';
+            if(m>0) return m+'m '+s+'s';
+            return s+'s';
+        }
+        
+        updateClock();
+        setInterval(updateClock, 1000);
+        updateSessions();
+        setInterval(updateSessions, 1000);
+        setTimeout(drawChart, 100);
+        window.addEventListener('resize', drawChart);
+    </script>
+</body>
+</html>
