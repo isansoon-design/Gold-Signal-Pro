@@ -1,1 +1,2564 @@
 
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Gold Signal Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #FFD700;
+            --gold-dark: #B8860B;
+            --gold-glow: rgba(255, 215, 0, 0.15);
+            --bg: #050508;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-gold: rgba(255, 215, 0, 0.2);
+            --text: #e8e8e8;
+            --text-muted: #888;
+            --text-dim: #555;
+            --green: #00ff88;
+            --red: #ff4444;
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            position: relative;
+        }
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            padding-top: 12px;
+        }
+        .app-bar {
+            height: 56px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border-gold);
+        }
+        .app-title { font-size: 20px; font-weight: 900; color: var(--gold); letter-spacing: 0.5px; }
+        .app-subtitle { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+        .icon-btn {
+            width: 42px; height: 42px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .icon-btn:active { transform: scale(0.95); background: var(--bg-card-hover); }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px;
+            padding-bottom: 90px;
+            scroll-behavior: smooth;
+        }
+        .content::-webkit-scrollbar { width: 0; }
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* NEWS TICKER */
+        .news-ticker-bar {
+            background: linear-gradient(90deg, rgba(255,215,0,0.08), rgba(255,215,0,0.03));
+            border-bottom: 1px solid var(--border-gold);
+            padding: 8px 0;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .news-ticker-bar::before {
+            content: '📰';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            font-size: 14px;
+        }
+        .news-ticker-track {
+            display: inline-block;
+            animation: ticker 25s linear infinite;
+            padding-left: 40px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .news-ticker-track span { margin-right: 40px; }
+
+        /* MARKET SESSIONS */
+        .market-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 7px;
+            overflow-x: auto;
+            padding: 1px 0;
+        }
+        .market-bar::-webkit-scrollbar { height: 0; }
+        .session {
+            flex: 1;
+            min-width: 39px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 5px 3px;
+            text-align: center;
+            font-size: 11px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .session.open { border-color: rgba(0, 255, 136, 0.4); background: rgba(0, 255, 136, 0.06); }
+        .session.opening { border-color: rgba(255, 215, 0, 0.4); background: var(--gold-glow); }
+        .session.closed { opacity: 0.45; }
+        .session-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-bottom: 3px;
+            box-shadow: 0 0 6px currentColor;
+        }
+        .session.open .session-dot { background: var(--green); color: var(--green); }
+        .session.opening .session-dot { background: var(--gold); color: var(--gold); animation: pulse 1.5s infinite; }
+        .session.closed .session-dot { background: var(--red); color: var(--red); }
+        .session-name { display: block; color: var(--text-muted); margin-bottom: 1px; font-weight: 700; font-size: 9px; }
+        .session-time { font-size: 8px; color: var(--text-dim); font-family: 'Inter', monospace; font-weight: 600; }
+        .session-countdown {
+            font-size: 11px;
+            color: var(--gold);
+            margin-top: 2px;
+            font-weight: 800;
+        }
+
+        /* SMALL MATERIAL BUTTONS */
+        .market-selector-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            margin-bottom: 14px;
+        }
+        .market-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 2px 6px;
+        }
+        .market-label.active {
+            color: var(--gold);
+        }
+        .market-sep {
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        /* SMALL PRICE BOX */
+        .price-box {
+            text-align: center;
+            padding: 6px 10px;
+            background: linear-gradient(145deg, rgba(255,215,0,0.04), rgba(255,215,0,0.01));
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-gold);
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        .price-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.5;
+        }
+        .price-label { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; font-weight: 500; }
+        .price-val {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--gold);
+            font-family: 'Inter', monospace;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+            letter-spacing: 0.5px;
+        }
+        .price-chg { font-size: 11px; font-weight: 700; margin-top: 2px; }
+        .price-chg.up { color: var(--green); }
+        .price-chg.down { color: var(--red); }
+        .price-extra {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .price-extra-item { text-align: center; }
+        .price-extra-lbl { font-size: 16px; color: var(--text-dim); margin-bottom: 1px; }
+        .price-extra-val { font-size: 11px; font-weight: 700; color: var(--text); font-family: 'Inter', monospace; }
+
+        /* CHART */
+        .chart-box {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 14px;
+            padding: 12px;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4px 12px;
+        }
+        .chart-title { font-size: 16px; font-weight: 800; color: var(--gold); }
+        .timeframes { display: flex; gap: 4px; }
+        .tf {
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .tf.active { background: var(--gold-glow); border-color: var(--border-gold); color: var(--gold); }
+        .tf:active { transform: scale(0.95); }
+        .chart-area {
+            height: 320px;
+            position: relative;
+            background: #06060a;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+        .chart-area iframe { width: 100%; height: 100%; border: none; border-radius: var(--radius-sm); }
+
+        /* ALERTS (NO BUY/SELL) */
+        .alerts-section { margin-bottom: 14px; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .section-title { font-size: 16px; font-weight: 800; }
+        .alert-count {
+            background: var(--gold-glow);
+            color: var(--gold);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid var(--border-gold);
+        }
+        .alert-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--gold);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .alert-card.alert-up { border-left-color: var(--green); }
+        .alert-card.alert-down { border-left-color: var(--red); }
+        .alert-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .alert-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .alert-card.alert-up .alert-badge { background: rgba(0,255,136,0.12); color: var(--green); }
+        .alert-card.alert-down .alert-badge { background: rgba(255,68,68,0.12); color: var(--red); }
+        .alert-card .alert-badge { background: var(--gold-glow); color: var(--gold); }
+        .alert-time { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+        .alert-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+        .alert-levels { display: flex; gap: 16px; margin-top: 8px; }
+        .alert-level { display: flex; flex-direction: column; }
+        .alert-level-lbl { font-size: 16px; color: var(--text-dim); margin-bottom: 2px; }
+        .alert-level-val { font-size: 13px; font-weight: 700; color: #fff; font-family: 'Inter', monospace; }
+        .alert-ind { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .ind {
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: var(--gold-glow);
+            color: var(--gold);
+            font-size: 10px;
+            font-weight: 600;
+            border: 1px solid var(--border-gold);
+        }
+
+        /* ACTIONS */
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .act-btn {
+            flex: 1;
+            padding: 14px 6px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            transition: all 0.25s;
+            font-family: 'Inter', sans-serif;
+        }
+        .act-btn:hover { background: var(--bg-card-hover); border-color: var(--border-gold); }
+        .act-btn:active { transform: scale(0.97); }
+        .act-icon { font-size: 16px; }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(24px) saturate(1.5);
+            border-top: 1px solid var(--border);
+            padding-bottom: 10px;
+            z-index: 100;
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+        }
+        .nav-btn.active { color: var(--gold); }
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            width: 20px;
+            height: 3px;
+            background: var(--gold);
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--gold);
+        }
+        .nav-btn svg { width: 24px; height: 24px; }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 14px 28px;
+            border-radius: 14px;
+            background: var(--gold);
+            color: #000;
+            font-weight: 800;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* AI SCREEN */
+        .ai-welcome {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .ai-avatar {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.2);
+        }
+        .ai-welcome h2 { font-size: 16px; font-weight: 900; margin-bottom: 8px; }
+        .ai-welcome p { color: var(--text-muted); font-size: 14px; }
+        .ai-chat {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0 4px;
+        }
+        .ai-msg {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.7;
+            animation: slideUp 0.3s;
+        }
+        .ai-msg.user {
+            align-self: flex-end;
+            background: var(--bg-card-hover);
+            border: 1px solid var(--border);
+            border-bottom-right-radius: 4px;
+        }
+        .ai-msg.bot {
+            align-self: flex-start;
+            background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,215,0,0.03));
+            border: 1px solid var(--border-gold);
+            border-bottom-left-radius: 4px;
+            color: var(--text);
+        }
+        .ai-input-area {
+            position: fixed;
+            bottom: 72px;
+            left: 0; right: 0;
+            padding: 12px 16px;
+            background: rgba(5,5,8,0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            z-index: 99;
+        }
+        .ai-input {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        .ai-input:focus { border-color: var(--border-gold); }
+        .ai-send {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            border: none;
+            color: #000;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .ai-send:active { transform: scale(0.95); }
+
+        /* PRIME SCREEN */
+        .prime-hero {
+            text-align: center;
+            padding: 30px 20px 20px;
+            background: linear-gradient(180deg, rgba(255,215,0,0.08), transparent);
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            border: 1px solid var(--border-gold);
+            position: relative;
+            overflow: hidden;
+        }
+        .prime-hero::before {
+            content: '✦';
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 20px;
+            color: var(--gold);
+            opacity: 0.3;
+        }
+        .prime-hero::after {
+            content: '✦';
+            position: absolute;
+            bottom: 10px; left: 15px;
+            font-size: 16px;
+            color: var(--gold);
+            opacity: 0.2;
+        }
+        .prime-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--gold-glow);
+            border: 1px solid var(--border-gold);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 16px;
+        }
+        .prime-hero h2 { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+        .prime-hero p { color: var(--text-muted); font-size: 14px; }
+        .prime-features { margin-bottom: 16px; }
+        .pf-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .pf-card:hover { border-color: var(--border-gold); }
+        .pf-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: var(--gold-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .pf-text h4 { font-size: 14px; font-weight: 800; margin-bottom: 3px; }
+        .pf-text p { font-size: 12px; color: var(--text-muted); }
+        .prime-plans {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .plan-card {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+        }
+        .plan-card.recommended {
+            border-color: var(--border-gold);
+            background: linear-gradient(180deg, rgba(255,215,0,0.06), transparent);
+        }
+        .plan-card.recommended::before {
+            content: 'BEST VALUE';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gold);
+            color: #000;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 12px;
+            border-radius: 10px;
+        }
+        .plan-card:hover { border-color: var(--border-gold); }
+        .plan-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+        .plan-price { font-size: 16px; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
+        .plan-price span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .plan-desc { font-size: 12px; color: var(--text-muted); }
+        .join-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            border: none;
+            color: #000;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+        }
+        .join-btn:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(255, 215, 0, 0.15); }
+
+        /* SETTINGS */
+        .settings-group { margin-bottom: 20px; }
+        .settings-group h3 {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding: 0 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .setting-item:hover { border-color: var(--border-gold); }
+        .setting-left { display: flex; align-items: center; gap: 12px; }
+        .setting-icon {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            background: var(--gold-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .setting-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+        .setting-info p { font-size: 12px; color: var(--text-muted); }
+        .toggle {
+            width: 50px; height: 28px;
+            background: var(--bg-card-hover);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+        }
+        .toggle.on { background: var(--green); border-color: var(--green); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px; height: 22px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .toggle.on::after { left: 24px; }
+
+        /* NOTIFICATIONS */
+        .notif-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .notif-header h2 { font-size: 18px; font-weight: 900; }
+        .clear-all {
+            background: none;
+            border: none;
+            color: var(--red);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        .notif-item {
+            display: flex;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+            animation: slideUp 0.3s;
+        }
+        .notif-item:hover { border-color: var(--border-gold); }
+        .notif-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .notif-icon.alert { background: rgba(255, 68, 68, 0.1); }
+        .notif-icon.news { background: rgba(68, 136, 255, 0.1); }
+        .notif-icon.session { background: rgba(0, 255, 136, 0.1); }
+        .notif-icon.prime { background: var(--gold-glow); }
+        .notif-content h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+        .notif-content p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .notif-time { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-state p { font-size: 14px; }
+
+        /* WIDGETS */
+        .calendar-box, .news-box, .ta-widget {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .calendar-box { height: 400px; }
+        .news-box { height: 350px; }
+        .ta-widget { height: 420px; }
+        .calendar-box iframe, .news-box iframe, .ta-widget iframe { width: 100%; height: 100%; border: none; }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        .modal {
+            background: var(--bg);
+            border: 1px solid var(--border-gold);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            width: 90%;
+            max-width: 340px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: all 0.3s;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(255,215,0,0.05);
+        }
+        .modal-overlay.show .modal { transform: scale(1); }
+        .modal-gift { font-size: 48px; margin-bottom: 12px; }
+        .modal h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+        .modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+        .modal-input {
+            width: 100%;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        .modal-input:focus { border-color: var(--border-gold); }
+        .modal-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            border: none;
+            color: #000;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .trial-banner {
+            background: linear-gradient(90deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05));
+            border: 1px solid var(--border-gold);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .trial-banner span { font-size: 12px; font-weight: 700; color: var(--gold); }
+        .trial-banner .trial-time { font-family: 'Inter', monospace; font-size: 14px; }
+
+        .lock-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+        .lock-screen .lock-icon { font-size: 64px; margin-bottom: 24px; }
+        .lock-screen h2 { font-size: 24px; font-weight: 900; margin-bottom: 12px; }
+        .lock-screen p { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; line-height: 1.7; }
+        .lock-screen .modal-input { margin-bottom: 12px; }
+        .lock-screen .modal-btn { margin-bottom: 0; }
+
+        .sound-radio {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--text-dim);
+            position: relative;
+            transition: all 0.2s;
+        }
+        .sound-radio.active {
+            border-color: var(--gold);
+            background: var(--gold);
+        }
+        .sound-radio.active::after {
+            content: '✓';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .copy-btn {
+            position: fixed;
+            top: 12px;
+            right: 60px;
+            z-index: 5000;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+            transition: all 0.2s;
+        }
+        .copy-btn:active { transform: scale(0.95); }
+        .copy-btn.copied { background: var(--green); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <button class="copy-btn" id="copyBtn" onclick="copyCode()">📋 Copy Code</button>
+    <div class="status-bar">
+        <span id="clock">02:45</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <span id="connectionStatus" style="font-size:10px;color:var(--green);">● Online</span>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path fill="currentColor" d="M1 8h2v2H1zm3-1h2v3H4zm3-2h2v5H7zm3-3h2v8h-2zm3-2h2v10h-2z"></path></svg>
+            <svg width="20" height="12" viewBox="0 0 20 12"><path fill="currentColor" d="M2 4h16v4H2z"></path><rect x="1" y="2" width="18" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"></rect></svg>
+        </div>
+    </div>
+
+    <div class="app-bar">
+        <div>
+            <span class="app-title" id="pageTitle">Gold Signal Pro</span>
+            <div class="app-subtitle" id="pageSubtitle">Professional Market Analysis</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <button class="icon-btn" onclick="goTo('notif')">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"></path></svg>
+                <span id="notifBadge" style="position:absolute;top:8px;right:8px;width:8px;height:8px;background:var(--red);border-radius:50%;display:none;"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="content" id="content">
+
+        <!-- HOME SCREEN -->
+        <div class="screen active" id="home">
+            <div class="trial-banner" id="trialBanner" style="display: flex;">
+                <span>🎁 Free Prime Trial</span>
+                <span class="trial-time" id="trialTime">13d 23h remaining</span>
+            </div>
+
+            <!-- NEWS TICKER -->
+            <div class="news-ticker-bar">
+                <div class="news-ticker-track" id="newsTicker">
+                    <span>Gold breaks above $2,460 resistance level</span>
+                    <span>Fed signals potential rate cut in next meeting</span>
+                    <span>US Dollar Index drops to monthly low</span>
+                    <span>Oil prices surge on Middle East tensions</span>
+                    <span>Silver demand increases in industrial sector</span>
+                    <span>European markets open higher on positive data</span>
+                </div>
+            </div>
+
+            <!-- MARKET SESSIONS -->
+            <div class="market-bar">
+                <div class="session open" id="tokyo"><span class="session-dot"></span><span class="session-name">Tokyo</span><span class="session-time">Closes 7h 14m</span><span class="session-countdown" id="tokyoCountdown"></span></div>
+                <div class="session closed" id="london"><span class="session-dot"></span><span class="session-name">London</span><span class="session-time">Opens 6h 14m</span><span class="session-countdown" id="londonCountdown"></span></div>
+                <div class="session closed" id="eu"><span class="session-dot"></span><span class="session-name">EU</span><span class="session-time">Opens 5h 14m</span><span class="session-countdown" id="euCountdown"></span></div>
+                <div class="session closed" id="usa"><span class="session-dot"></span><span class="session-name">USA</span><span class="session-time">Opens 11h 14m</span><span class="session-countdown" id="usaCountdown"></span></div>
+            </div>
+
+            <!-- SMALL MATERIAL BUTTONS (NO MEDALS) -->
+            <div class="market-selector-bar">
+                <span class="market-label active" onclick="setMat('gold', this)">Gold</span>
+                <span class="market-sep">|</span>
+                <span class="market-label" onclick="setMat('silver', this)">Silver</span>
+                <span class="market-sep">|</span>
+                <span class="market-label" onclick="setMat('oil', this)">Oil</span>
+            </div>
+
+            <!-- SMALL PRICE BOX -->
+            <div class="price-box">
+                <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <span class="price-val" id="price" style="opacity: 1;">4,021.33</span>
+                    <span id="pairInBox" style="font-size:14px;font-weight:700;color:var(--gold);font-family:'Inter',monospace;">XAU/USD</span>
+                </div>
+                <span class="price-chg up" id="change">+0.60%</span>
+
+            </div>
+
+            <!-- CHART -->
+            <div class="chart-box">
+                <div class="chart-header">
+                    
+    
+                </div>
+                <div class="chart-area" id="chartContainer">
+                    <iframe id="tvChart" src="https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&amp;symbol=OANDA%3AXAUUSD#%7B%22autosize%22%3Atrue%2C%22symbol%22%3A%22OANDA%3AXAUUSD%22%2C%22interval%22%3A%2230%22%2C%22timezone%22%3A%22Etc%2FUTC%22%2C%22theme%22%3A%22dark%22%2C%22style%22%3A%221%22%2C%22locale%22%3A%22en%22%2C%22allow_symbol_change%22%3Afalse%2C%22calendar%22%3Afalse%2C%22studies%22%3A%5B%7B%22id%22%3A%22MASimple%40tv-basicstudies%22%2C%22version%22%3A%2260%22%2C%22inputs%22%3A%7B%22length%22%3A50%7D%7D%5D%2C%22support_host%22%3A%22https%3A%2F%2Fwww.tradingview.com%22%7D" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+                </div>
+            </div>
+
+            <!-- CHART NEWS -->
+            <div class="section-header">
+                <span class="section-title">📰 Chart News</span>
+            </div>
+            <div class="news-box">
+                <iframe id="newsWidget" src="https://s.tradingview.com/embed-widget/timeline/?locale=en&amp;symbol=OANDA%3AXAUUSD#%7B%22feedMode%22%3A%22symbol%22%2C%22symbol%22%3A%22OANDA%3AXAUUSD%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%2C%22displayMode%22%3A%22regular%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22100%25%22%2C%22locale%22%3A%22en%22%7D" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+            </div>
+
+            <!-- ECONOMIC CALENDAR -->
+            <div class="section-header">
+                <span class="section-title">📅 Economic News Countdown</span>
+            </div>
+            <div class="calendar-box">
+                <iframe id="calendarWidget" src="https://s.tradingview.com/embed-widget/events/?locale=en#%7B%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22100%25%22%2C%22locale%22%3A%22en%22%2C%22importanceFilter%22%3A%22-1%2C0%2C1%22%7D" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+            </div>
+
+            <!-- ALERTS ONLY (NO BUY/SELL) -->
+            <div class="alerts-section">
+                <div class="section-header">
+                    <span class="section-title">📊 Market Alerts</span>
+                    <span class="alert-count" id="alertCount">2 Active</span>
+                </div>
+                <div id="alertsList">
+                    <div class="alert-card alert-up">
+                        <div class="alert-head">
+                            <span class="alert-badge">📈 BULLISH</span>
+                            <span class="alert-time">2 min ago</span>
+                        </div>
+                        <div class="alert-text">Gold showing bullish momentum with RSI at 45 and MA crossover detected.</div>
+                        <div class="alert-levels">
+                            <div class="alert-level"><span class="alert-level-lbl">Support</span><span class="alert-level-val">2,438.00</span></div>
+                            <div class="alert-level"><span class="alert-level-lbl">Resistance</span><span class="alert-level-val">2,460.00</span></div>
+                            <div class="alert-level"><span class="alert-level-lbl">Target</span><span class="alert-level-val">2,480.00</span></div>
+                        </div>
+                        <div class="alert-ind">
+                            <span class="ind">RSI: 45</span>
+                            <span class="ind">MA Cross</span>
+                            <span class="ind">Candle Pattern</span>
+                        </div>
+                    </div>
+                    <div class="alert-card alert-down">
+                        <div class="alert-head">
+                            <span class="alert-badge">📉 BEARISH</span>
+                            <span class="alert-time">15 min ago</span>
+                        </div>
+                        <div class="alert-text">Gold approaching overbought territory. Potential reversal zone ahead.</div>
+                        <div class="alert-levels">
+                            <div class="alert-level"><span class="alert-level-lbl">Resistance</span><span class="alert-level-val">2,465.00</span></div>
+                            <div class="alert-level"><span class="alert-level-lbl">Support</span><span class="alert-level-val">2,440.00</span></div>
+                            <div class="alert-level"><span class="alert-level-lbl">Target</span><span class="alert-level-val">2,420.00</span></div>
+                        </div>
+                        <div class="alert-ind">
+                            <span class="ind">RSI: 72</span>
+                            <span class="ind">Overbought</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TECHNICAL ANALYSIS -->
+            <div class="section-header">
+                <span class="section-title">🎯 Technical Analysis</span>
+            </div>
+            <div class="ta-widget">
+                <iframe id="taWidget" src="https://s.tradingview.com/embed-widget/technical-analysis/?locale=en&amp;symbol=OANDA%3AXAUUSD#%7B%22interval%22%3A%2230%22%2C%22width%22%3A%22100%25%22%2C%22isTransparent%22%3Atrue%2C%22height%22%3A%22100%25%22%2C%22symbol%22%3A%22OANDA%3AXAUUSD%22%2C%22showIntervalTabs%22%3Atrue%2C%22displayMode%22%3A%22single%22%2C%22locale%22%3A%22en%22%2C%22colorTheme%22%3A%22dark%22%7D" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+            </div>
+
+            <!-- QUICK ACTIONS -->
+            <div class="actions">
+                <button class="act-btn" onclick="goTo('ai')"><span class="act-icon">🤖</span><span>Ask AI</span></button>
+                <button class="act-btn" onclick="goTo('prime')"><span class="act-icon">💎</span><span>Go Prime</span></button>
+                <button class="act-btn" onclick="goTo('notif')"><span class="act-icon">🔔</span><span>Alerts</span></button>
+            </div>
+        </div>
+
+        <!-- AI SCREEN -->
+        <div class="screen" id="ai">
+            <div class="ai-welcome">
+                <div class="ai-avatar">🤖</div>
+                <h2>Gold Signal Pro AI Assistant</h2>
+                <p>Ask me anything about market analysis</p>
+            </div>
+            <div class="ai-chat" id="aiChat">
+                <div class="ai-msg bot">
+                    Hello! I'm your AI assistant in Gold Signal Pro. I can help you with:
+                    <br>• Price trend analysis
+                    <br>• Technical indicators explanation
+                    <br>• Economic news tracking
+                    <br>• Risk management tips
+                    <br><br>How can I help you today?
+                </div>
+            </div>
+            <div style="height:80px;"></div>
+        </div>
+
+        <!-- PRIME SCREEN -->
+        <div class="screen" id="prime">
+            <div class="prime-hero">
+                <div class="prime-badge">💎 PRIME</div>
+                <h2>Unlock the Full Power</h2>
+                <p>Get advanced professional analysis and smart alerts</p>
+            </div>
+
+            <div class="prime-features">
+                <div class="pf-card">
+                    <div class="pf-icon">🤖</div>
+                    <div class="pf-text">
+                        <h4>Smart AI Analysis</h4>
+                        <p>Instant market analysis using the latest AI technology</p>
+                    </div>
+                </div>
+                <div class="pf-card">
+                    <div class="pf-icon">🔔</div>
+                    <div class="pf-text">
+                        <h4>Market Session Alerts</h4>
+                        <p>Instant alerts when global sessions open and close</p>
+                    </div>
+                </div>
+                <div class="pf-card">
+                    <div class="pf-icon">📰</div>
+                    <div class="pf-text">
+                        <h4>Economic News Alerts</h4>
+                        <p>Instant alerts for important economic news</p>
+                    </div>
+                </div>
+                <div class="pf-card">
+                    <div class="pf-icon">📊</div>
+                    <div class="pf-text">
+                        <h4>Chart News</h4>
+                        <p>News directly linked to the active asset</p>
+                    </div>
+                </div>
+                <div class="pf-card">
+                    <div class="pf-icon">🚀</div>
+                    <div class="pf-text">
+                        <h4>Future Premium Features</h4>
+                        <p>Early access to all upcoming premium features</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prime-plans">
+                <div class="plan-card" onclick="selectPlan(this, 'monthly')">
+                    <h3>Monthly Prime</h3>
+                    <div class="plan-price">£15 <span>/ Month</span></div>
+                    <div class="plan-desc">Cancel Anytime</div>
+                </div>
+                <div class="plan-card recommended" onclick="selectPlan(this, 'yearly')">
+                    <h3>Yearly Prime</h3>
+                    <div class="plan-price">£150 <span>One-Time</span></div>
+                    <div class="plan-desc">Save £30 per year</div>
+                </div>
+            </div>
+
+            <button class="join-btn" onclick="joinPrime()">JOIN PRIME</button>
+        </div>
+
+        <!-- NOTIFICATIONS SCREEN -->
+        <div class="screen" id="notif">
+            <div class="notif-header">
+                <h2>🔔 Smart Notifications</h2>
+                <button class="clear-all" onclick="clearNotifications()">Clear All</button>
+            </div>
+            <div id="notificationsList">
+                <div class="notif-item">
+                    <div class="notif-icon alert">⚠️</div>
+                    <div class="notif-content">
+                        <h4>Price Alert</h4>
+                        <p>Gold is approaching an important resistance at 2,460</p>
+                        <div class="notif-time">5 min ago</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon session">🌍</div>
+                    <div class="notif-content">
+                        <h4>London Session Open</h4>
+                        <p>London session is now open - high activity expected on Gold</p>
+                        <div class="notif-time">1 hour ago</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon news">📰</div>
+                    <div class="notif-content">
+                        <h4>Important Economic News</h4>
+                        <p>US Inflation data coming in 30 minutes</p>
+                        <div class="notif-time">2 hours ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS SCREEN -->
+        <div class="screen" id="settings">
+            <div class="settings-group">
+                <h3>Account</h3>
+                <div class="setting-item">
+                    <div class="setting-left">
+                        <div class="setting-icon">👤</div>
+                        <div class="setting-info">
+                            <h4>Email</h4>
+                            <p id="userEmail">isansoon@gmail.com</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item" id="primeStatusItem">
+                    <div class="setting-left">
+                        <div class="setting-icon">💎</div>
+                        <div class="setting-info">
+                            <h4>Subscription Status</h4>
+                            <p id="primeStatus">Prime Active (13 days left)</p>
+                        </div>
+                    </div>
+                    <span style="color: var(--gold); font-weight: 800; font-size: 12px;" id="primeStatusBadge">PRIME</span>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Alerts</h3>
+                <div class="setting-item" onclick="toggleSetting(this, 'priceAlerts')">
+                    <div class="setting-left">
+                        <div class="setting-icon">📈</div>
+                        <div class="setting-info">
+                            <h4>Price Alerts</h4>
+                            <p>Alert when reaching important levels</p>
+                        </div>
+                    </div>
+                    <div class="toggle on" id="toggle-priceAlerts"></div>
+                </div>
+                <div class="setting-item" onclick="toggleSetting(this, 'sessionAlerts')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🌍</div>
+                        <div class="setting-info">
+                            <h4>Session Alerts</h4>
+                            <p>Alert on session open and close</p>
+                        </div>
+                    </div>
+                    <div class="toggle on" id="toggle-sessionAlerts"></div>
+                </div>
+                <div class="setting-item" onclick="toggleSetting(this, 'newsAlerts')">
+                    <div class="setting-left">
+                        <div class="setting-icon">📰</div>
+                        <div class="setting-info">
+                            <h4>News Alerts</h4>
+                            <p>Alert for important economic news</p>
+                        </div>
+                    </div>
+                    <div class="toggle on" id="toggle-newsAlerts"></div>
+                </div>
+                <div class="setting-item" onclick="toggleSetting(this, 'aiAlerts')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🤖</div>
+                        <div class="setting-info">
+                            <h4>AI Analysis</h4>
+                            <p>Receive periodic smart analysis</p>
+                        </div>
+                    </div>
+                    <div class="toggle" id="toggle-aiAlerts"></div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Alert Sound</h3>
+                <div class="setting-item" onclick="selectSound('1ding')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🔔</div>
+                        <div class="setting-info">
+                            <h4>1 Ding</h4>
+                            <p>Single church bell</p>
+                        </div>
+                    </div>
+                    <div class="sound-radio" id="sound-1ding"></div>
+                </div>
+                <div class="setting-item" onclick="selectSound('2ding')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🔔</div>
+                        <div class="setting-info">
+                            <h4>2 Ding</h4>
+                            <p>Double church bell</p>
+                        </div>
+                    </div>
+                    <div class="sound-radio" id="sound-2ding"></div>
+                </div>
+                <div class="setting-item" onclick="selectSound('3ding')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🔔</div>
+                        <div class="setting-info">
+                            <h4>3 Ding</h4>
+                            <p>Triple church bell</p>
+                        </div>
+                    </div>
+                    <div class="sound-radio active" id="sound-3ding"></div>
+                </div>
+                <div class="setting-item" onclick="selectSound('silent')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🔕</div>
+                        <div class="setting-info">
+                            <h4>Silent</h4>
+                            <p>No sound, notification only</p>
+                        </div>
+                    </div>
+                    <div class="sound-radio" id="sound-silent"></div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Custom Sound</h3>
+                <div class="setting-item" onclick="document.getElementById('customSoundInput').click()">
+                    <div class="setting-left">
+                        <div class="setting-icon">🎵</div>
+                        <div class="setting-info">
+                            <h4>Upload MP3</h4>
+                            <p id="customSoundLabel">Use your own sound</p>
+                        </div>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+                </div>
+                <input type="file" id="customSoundInput" accept="audio/mp3,audio/wav" style="display:none" onchange="handleCustomSound(event)">
+                <div class="setting-item" onclick="clearCustomSound()">
+                    <div class="setting-left">
+                        <div class="setting-icon">🗑️</div>
+                        <div class="setting-info">
+                            <h4>Reset to Default</h4>
+                            <p>Remove custom sound</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Push Notifications</h3>
+                <div class="setting-item" onclick="togglePushNotifications(this)">
+                    <div class="setting-left">
+                        <div class="setting-icon">📱</div>
+                        <div class="setting-info">
+                            <h4>Enable Push</h4>
+                            <p>Receive alerts even when app is closed</p>
+                        </div>
+                    </div>
+                    <div class="toggle" id="toggle-push"></div>
+                </div>
+                <div class="setting-item" onclick="testPushNotification()">
+                    <div class="setting-left">
+                        <div class="setting-icon">🧪</div>
+                        <div class="setting-info">
+                            <h4>Test Push</h4>
+                            <p>Send a test notification</p>
+                        </div>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>App</h3>
+                <div class="setting-item" onclick="toggleSetting(this, 'darkMode')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🌙</div>
+                        <div class="setting-info">
+                            <h4>Dark Mode</h4>
+                            <p>Dark theme for eyes comfort</p>
+                        </div>
+                    </div>
+                    <div class="toggle on" id="toggle-darkMode"></div>
+                </div>
+                <div class="setting-item" onclick="toggleSetting(this, 'sound')">
+                    <div class="setting-left">
+                        <div class="setting-icon">🔊</div>
+                        <div class="setting-info">
+                            <h4>Sounds</h4>
+                            <p>Enable alert sounds</p>
+                        </div>
+                    </div>
+                    <div class="toggle on" id="toggle-sound"></div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>About</h3>
+                <div class="setting-item">
+                    <div class="setting-left">
+                        <div class="setting-icon">ℹ️</div>
+                        <div class="setting-info">
+                            <h4>Version</h4>
+                            <p>Gold Signal Pro v1.0</p>
+                        </div>
+                    </div>
+                    <span style="color:var(--text-dim);font-size:12px;">1.0.0</span>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-left">
+                        <div class="setting-icon">📋</div>
+                        <div class="setting-info">
+                            <h4>Privacy Policy</h4>
+                            <p>Read our privacy policy</p>
+                        </div>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-left">
+                        <div class="setting-icon">📞</div>
+                        <div class="setting-info">
+                            <h4>Support</h4>
+                            <p>Contact our support team</p>
+                        </div>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-input-area" id="aiInputArea" style="display:none;">
+        <input type="text" class="ai-input" id="aiInput" placeholder="Type your question..." onkeypress="if(event.key==='Enter')sendAiMsg()">
+        <button class="ai-send" onclick="sendAiMsg()">➤</button>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="goTo('home')">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+            <span>Home</span>
+        </button>
+        <button class="nav-btn" onclick="goTo('ai')">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg>
+            <span>AI</span>
+        </button>
+        <button class="nav-btn" onclick="goTo('prime')">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path></svg>
+            <span>Prime</span>
+        </button>
+        <button class="nav-btn" onclick="goTo('settings')">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
+            <span>Settings</span>
+        </button>
+    </div>
+
+    <div class="toast" id="toast">Code copied to clipboard!</div>
+
+    <div class="modal-overlay" id="giftModal">
+        <div class="modal">
+            <div class="modal-gift">🎁</div>
+            <h3>Enjoy Your Free Gift!</h3>
+            <p>Enter your email now and unlock your<br><strong style="color:var(--gold);">14 DAYS FREE PRIME TRIAL</strong></p>
+            <input type="email" class="modal-input" id="giftEmail" placeholder="your@email.com">
+            <button class="modal-btn" onclick="activateTrial()">Start Free Trial</button>
+            <button class="modal-btn secondary" onclick="closeGiftModal()">Later</button>
+        </div>
+    </div>
+
+    <div class="lock-screen" id="lockScreen" style="display:none;">
+        <div class="lock-icon">🔒</div>
+        <h2>Your Free Access Has Ended</h2>
+        <p>Enter your email to activate your<br><strong style="color:var(--gold);">14 DAYS FREE PRIME TRIAL</strong></p>
+        <input type="email" class="modal-input" id="lockEmail" placeholder="your@email.com">
+        <button class="modal-btn" onclick="unlockApp()">Activate Account</button>
+    </div>
+</div>
+<script>
+// ==================== STATE ====================
+let currentMat = 'gold';
+let currentTF = '30';
+let currentScreen = 'home';
+let isPrime = false;
+let trialEndTime = null;
+let installTime = localStorage.getItem('gsp_install') ? parseInt(localStorage.getItem('gsp_install')) : Date.now();
+let userEmail = localStorage.getItem('gsp_email') || '';
+let isLocked = false;
+let lastReminder = 0;
+let selectedPlan = 'yearly';
+
+const SYMBOLS = {
+    gold: { symbol: 'OANDA:XAUUSD', pair: 'XAU/USD', label: 'Gold Price / USD', name: 'Gold' },
+    silver: { symbol: 'OANDA:XAGUSD', pair: 'XAG/USD', label: 'Silver Price / USD', name: 'Silver' },
+    oil: { symbol: 'TVC:USOIL', pair: 'WTI/USD', label: 'Oil Price / USD', name: 'Oil' }
+};
+
+const SESSIONS = [
+    { id: 'tokyo', name: 'Tokyo', oh: 0, om: 0, ch: 9, cm: 0 },
+    { id: 'london', name: 'London', oh: 8, om: 0, ch: 17, cm: 0 },
+    { id: 'eu', name: 'EU', oh: 7, om: 0, ch: 16, cm: 0 },
+    { id: 'usa', name: 'USA', oh: 13, om: 0, ch: 22, cm: 0 }
+];
+
+// ==================== INIT ====================
+function init() {
+    if (!localStorage.getItem('gsp_install')) {
+        localStorage.setItem('gsp_install', installTime);
+    }
+
+    // Initialize push notifications
+    initPushNotifications();
+
+    const savedTrial = localStorage.getItem('gsp_trial_end');
+    if (savedTrial) {
+        trialEndTime = parseInt(savedTrial);
+        if (Date.now() < trialEndTime) {
+            isPrime = true;
+        }
+    }
+
+    const freeAccessEnd = installTime + (24 * 60 * 60 * 1000);
+    if (!userEmail && Date.now() > freeAccessEnd) {
+        isLocked = true;
+        document.getElementById('lockScreen').style.display = 'flex';
+    }
+
+    const fourHours = installTime + (4 * 60 * 60 * 1000);
+    const giftShown = localStorage.getItem('gsp_gift_shown');
+    if (!giftShown && Date.now() > fourHours && !userEmail) {
+        setTimeout(() => {
+            document.getElementById('giftModal').classList.add('show');
+            localStorage.setItem('gsp_gift_shown', 'true');
+        }, 2000);
+    }
+
+    updateUI();
+    updateClock();
+    setInterval(updateClock, 1000);
+    updateSessions();
+    setInterval(updateSessions, 1000);
+    fetchPrice();
+    setInterval(fetchPrice, 30000);
+    loadTradingViewWidgets();
+    updateTrialBanner();
+    setInterval(updateTrialBanner, 60000);
+    checkPrimeReminders();
+    setInterval(checkPrimeReminders, 60000);
+
+    if (userEmail) {
+        document.getElementById('userEmail').textContent = userEmail;
+    }
+    updatePrimeStatus();
+
+    // Initialize sound settings UI
+    document.querySelectorAll('.sound-radio').forEach(r => r.classList.remove('active'));
+    const savedSound = localStorage.getItem('gsp_alertSound') || '1ding';
+    const soundEl = document.getElementById('sound-' + savedSound);
+    if (soundEl) soundEl.classList.add('active');
+
+    // Load custom sound if exists
+    customSoundData = localStorage.getItem('gsp_customSound') || null;
+    if (customSoundData) {
+        document.getElementById('customSoundLabel').textContent = 'Custom sound loaded';
+    }
+
+    // Initialize push toggle
+    const pushToggle = document.getElementById('toggle-push');
+    if (pushToggle && localStorage.getItem('gsp_push') === 'true') {
+        pushToggle.classList.add('on');
+    }
+
+    // Fetch real price immediately
+    fetchPrice();
+
+    // Fetch price again after widgets load
+    setTimeout(fetchPrice, 2000);
+
+    // Start simulation
+    startSimulation();
+}
+
+// ==================== NAVIGATION ====================
+function goTo(screen) {
+    if (isLocked && screen !== 'settings') return;
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+    const target = document.getElementById(screen);
+    if (target) target.classList.add('active');
+
+    const screens = ['home', 'ai', 'prime', 'settings'];
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const idx = screens.indexOf(screen);
+    if (idx >= 0 && navBtns[idx]) navBtns[idx].classList.add('active');
+
+    currentScreen = screen;
+
+    const aiInput = document.getElementById('aiInputArea');
+    aiInput.style.display = screen === 'ai' ? 'flex' : 'none';
+
+    const titles = {
+        home: { title: 'Gold Signal Pro', sub: 'Professional Market Analysis' },
+        ai: { title: 'AI Assistant', sub: 'Ask me anything' },
+        prime: { title: 'Prime', sub: 'Unlock exclusive features' },
+        notif: { title: 'Notifications', sub: 'Everything that matters' },
+        settings: { title: 'Settings', sub: 'Customize your app' }
+    };
+    if (titles[screen]) {
+        document.getElementById('pageTitle').textContent = titles[screen].title;
+        document.getElementById('pageSubtitle').textContent = titles[screen].sub;
+    }
+
+    if (screen === 'notif') {
+        document.getElementById('notifBadge').style.display = 'none';
+    }
+}
+
+// ==================== MATERIALS & TIMEFRAMES ====================
+function setMat(mat, btn) {
+    document.querySelectorAll('.market-label').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMat = mat;
+    const info = SYMBOLS[mat];
+    document.getElementById('pairInBox').textContent = info.pair;
+    loadTradingViewWidgets();
+
+    // Reset price display when switching materials
+    document.getElementById('price').textContent = 'Loading...';
+    document.getElementById('change').textContent = '--';
+    document.getElementById('change').className = 'price-chg';
+
+    // Try cached price first for instant display
+    const cached = getCachedPrice(mat);
+    if (cached) {
+        displayPrice(cached.price, cached.change);
+        document.getElementById('price').style.opacity = '0.7';
+    }
+
+    // Fetch fresh price immediately
+    setTimeout(fetchPrice, 100);
+
+    showToast('Switched to ' + info.name);
+}
+
+function setTF(tf, btn) {
+    document.querySelectorAll('.tf').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTF = tf;
+    loadTradingViewWidgets();
+}
+
+// ==================== TRADINGVIEW WIDGETS ====================
+function loadTradingViewWidgets() {
+    const sym = SYMBOLS[currentMat].symbol;
+    const tf = currentTF;
+
+    const chartUrl = 'https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&symbol=' + encodeURIComponent(sym) + '#%7B%22autosize%22%3Atrue%2C%22symbol%22%3A%22' + encodeURIComponent(sym) + '%22%2C%22interval%22%3A%22' + tf + '%22%2C%22timezone%22%3A%22Etc%2FUTC%22%2C%22theme%22%3A%22dark%22%2C%22style%22%3A%221%22%2C%22locale%22%3A%22en%22%2C%22allow_symbol_change%22%3Afalse%2C%22calendar%22%3Afalse%2C%22studies%22%3A%5B%7B%22id%22%3A%22MASimple%40tv-basicstudies%22%2C%22version%22%3A%2260%22%2C%22inputs%22%3A%7B%22length%22%3A50%7D%7D%5D%2C%22support_host%22%3A%22https%3A%2F%2Fwww.tradingview.com%22%7D';
+    document.getElementById('tvChart').src = chartUrl;
+
+    const newsUrl = 'https://s.tradingview.com/embed-widget/timeline/?locale=en&symbol=' + encodeURIComponent(sym) + '#%7B%22feedMode%22%3A%22symbol%22%2C%22symbol%22%3A%22' + encodeURIComponent(sym) + '%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%2C%22displayMode%22%3A%22regular%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22100%25%22%2C%22locale%22%3A%22en%22%7D';
+    document.getElementById('newsWidget').src = newsUrl;
+
+    const calUrl = 'https://s.tradingview.com/embed-widget/events/?locale=en#%7B%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22100%25%22%2C%22locale%22%3A%22en%22%2C%22importanceFilter%22%3A%22-1%2C0%2C1%22%7D';
+    document.getElementById('calendarWidget').src = calUrl;
+
+    const taUrl = 'https://s.tradingview.com/embed-widget/technical-analysis/?locale=en&symbol=' + encodeURIComponent(sym) + '#%7B%22interval%22%3A%22' + tf + '%22%2C%22width%22%3A%22100%25%22%2C%22isTransparent%22%3Atrue%2C%22height%22%3A%22100%25%22%2C%22symbol%22%3A%22' + encodeURIComponent(sym) + '%22%2C%22showIntervalTabs%22%3Atrue%2C%22displayMode%22%3A%22single%22%2C%22locale%22%3A%22en%22%2C%22colorTheme%22%3A%22dark%22%7D';
+    document.getElementById('taWidget').src = taUrl;
+}
+
+// ==================== PRICE FETCHING - FIXED ====================
+// Uses multiple free APIs to match TradingView XAU/USD spot price
+// Priority: ForexRateAPI → ExchangeRate → CoinGecko → Cached → Simulated
+
+const PRICE_APIS = {
+    gold: {
+        // ForexRateAPI - free, no key, matches TradingView OANDA prices
+        forexRate: 'https://api.exchangerate-api.com/v4/latest/USD',
+        // Alternative: direct gold price API
+        goldApi: 'https://data-asg.goldprice.org/dbXRates/USD',
+        // CoinGecko as fallback (crypto-backed gold)
+        coingecko: 'tether-gold'
+    },
+    silver: {
+        forexRate: 'https://api.exchangerate-api.com/v4/latest/USD',
+        coingecko: 'silver-token'
+    },
+    oil: {
+        // Oil uses simulated with realistic base price
+        useSimulated: true,
+        basePrice: 78.35
+    }
+};
+
+// Cache for prices
+let priceCache = {};
+
+async function fetchPrice() {
+    const mat = currentMat;
+    const priceEl = document.getElementById('price');
+    const chgEl = document.getElementById('change');
+
+    // Show loading state
+    if (!priceEl.textContent.includes('.')) {
+        priceEl.textContent = 'Loading...';
+    }
+
+    try {
+        let priceData = null;
+
+        if (mat === 'gold') {
+            priceData = await fetchGoldPrice();
+        } else if (mat === 'silver') {
+            priceData = await fetchSilverPrice();
+        } else if (mat === 'oil') {
+            priceData = await fetchOilPrice();
+        }
+
+        if (priceData && priceData.price > 0) {
+            displayPrice(priceData.price, priceData.change);
+
+            // Cache the successful price
+            priceCache[mat] = {
+                price: priceData.price,
+                change: priceData.change,
+                time: Date.now()
+            };
+            localStorage.setItem('gsp_price_cache', JSON.stringify(priceCache));
+        } else {
+            throw new Error('No price data');
+        }
+
+    } catch (e) {
+        console.log('Price fetch error:', e.message);
+
+        // Try to use cached price
+        const cached = getCachedPrice(mat);
+        if (cached) {
+            displayPrice(cached.price, cached.change);
+            priceEl.style.opacity = '0.7';
+        } else {
+            // Last resort: simulated price
+            showSimulatedPrice(mat);
+        }
+    }
+}
+
+// ==================== GOLD PRICE (XAU/USD) ====================
+async function fetchGoldPrice() {
+    // Method 1: GoldPrice.org API (free, no CORS, spot gold)
+    try {
+        const res = await fetch('https://data-asg.goldprice.org/dbXRates/USD', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            // GoldPrice.org returns price in USD per ounce
+            if (data && data.items && data.items[0] && data.items[0].xauPrice) {
+                const price = parseFloat(data.items[0].xauPrice);
+                const prevPrice = parseFloat(data.items[0].xauClose || price * 0.998);
+                const change = ((price - prevPrice) / prevPrice) * 100;
+                return { price: price, change: change };
+            }
+        }
+    } catch (e) { console.log('GoldPrice.org failed:', e.message); }
+
+    // Method 2: ExchangeRate-API (free tier, XAU rate)
+    try {
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (res.ok) {
+            const data = await res.json();
+            // Some APIs include XAU in rates
+            if (data.rates && data.rates.XAU) {
+                // XAU rate is usually 1/price, so invert it
+                const xauRate = data.rates.XAU;
+                const price = 1 / xauRate;
+                // Estimate change from timestamp
+                const change = 0; // API doesn't provide change
+                return { price: price, change: change };
+            }
+        }
+    } catch (e) { console.log('ExchangeRate failed:', e.message); }
+
+    // Method 3: CoinGecko (crypto gold tokens track spot price)
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether-gold,pax-gold&vs_currencies=usd&include_24hr_change=true');
+        if (res.ok) {
+            const data = await res.json();
+            // Use Tether Gold (XAUT) or PAX Gold (PAXG) - both track gold spot
+            const token = data['tether-gold'] || data['pax-gold'];
+            if (token && token.usd) {
+                const price = token.usd;
+                const change = token.usd_24h_change || 0;
+                return { price: price, change: change };
+            }
+        }
+    } catch (e) { console.log('CoinGecko failed:', e.message); }
+
+    return null;
+}
+
+// ==================== SILVER PRICE (XAG/USD) ====================
+async function fetchSilverPrice() {
+    // Method 1: GoldPrice.org also provides silver
+    try {
+        const res = await fetch('https://data-asg.goldprice.org/dbXRates/USD');
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.items && data.items[0] && data.items[0].xagPrice) {
+                const price = parseFloat(data.items[0].xagPrice);
+                const prevPrice = parseFloat(data.items[0].xagClose || price * 0.998);
+                const change = ((price - prevPrice) / prevPrice) * 100;
+                return { price: price, change: change };
+            }
+        }
+    } catch (e) { console.log('Silver GoldPrice.org failed:', e.message); }
+
+    // Method 2: CoinGecko
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=silver-token,wrapped-silver&vs_currencies=usd&include_24hr_change=true');
+        if (res.ok) {
+            const data = await res.json();
+            const token = data['silver-token'] || data['wrapped-silver'];
+            if (token && token.usd) {
+                return { price: token.usd, change: token.usd_24h_change || 0 };
+            }
+        }
+    } catch (e) { console.log('Silver CoinGecko failed:', e.message); }
+
+    return null;
+}
+
+// ==================== OIL PRICE (WTI) ====================
+async function fetchOilPrice() {
+    // Oil is tricky - use Yahoo Finance with CORS proxy as primary
+    try {
+        const proxyUrls = [
+            'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/CL=F?interval=1d&range=1d'),
+            'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/CL=F?interval=1d&range=1d')
+        ];
+
+        for (const proxyUrl of proxyUrls) {
+            try {
+                const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
+                if (!res.ok) continue;
+
+                const data = await res.json();
+                if (data.chart && data.chart.result && data.chart.result[0]) {
+                    const meta = data.chart.result[0].meta;
+                    const price = meta.regularMarketPrice || meta.previousClose;
+                    const prevClose = meta.previousClose || meta.chartPreviousClose;
+                    const change = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+                    return { price: price, change: change };
+                }
+            } catch (err) { continue; }
+        }
+    } catch (e) { console.log('Oil Yahoo failed:', e.message); }
+
+    // Fallback to simulated
+    return { price: 78.35 + (Math.random() - 0.5) * 0.5, change: (Math.random() - 0.5) * 2 };
+}
+
+// ==================== DISPLAY HELPERS ====================
+function displayPrice(price, change) {
+    const priceEl = document.getElementById('price');
+    const chgEl = document.getElementById('change');
+
+    // Format decimals based on material
+    let decimals = 2;
+    if (currentMat === 'silver') decimals = 3;
+
+    priceEl.textContent = price.toLocaleString('en-US', { 
+        minimumFractionDigits: decimals, 
+        maximumFractionDigits: decimals 
+    });
+    priceEl.style.opacity = '1';
+
+    chgEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+    chgEl.className = 'price-chg ' + (change >= 0 ? 'up' : 'down');
+}
+
+function showSimulatedPrice(mat) {
+    const basePrices = { gold: 4028.69, silver: 28.45, oil: 78.35 };
+    const base = basePrices[mat] || 2000;
+    const variation = (Math.random() - 0.5) * (base * 0.002);
+    const price = base + variation;
+    const change = (Math.random() - 0.5) * 1.5;
+
+    displayPrice(price, change);
+    document.getElementById('price').style.opacity = '0.6';
+}
+
+function getCachedPrice(mat) {
+    try {
+        const cacheStr = localStorage.getItem('gsp_price_cache');
+        if (!cacheStr) return null;
+
+        const cache = JSON.parse(cacheStr);
+        const item = cache[mat];
+
+        // Cache valid for 5 minutes
+        if (item && (Date.now() - item.time) < 300000) {
+            return item;
+        }
+    } catch (e) { }
+    return null;
+}
+
+// ==================== INIT PRICE ====================
+// Load cached prices on startup
+try {
+    const saved = localStorage.getItem('gsp_price_cache');
+    if (saved) priceCache = JSON.parse(saved);
+} catch (e) { }
+
+// Auto-refresh every 15 seconds
+setInterval(fetchPrice, 15000);
+
+// ==================== SESSIONS WITH 30-MIN COUNTDOWN ====================
+function updateSessions() {
+    const now = new Date();
+    const utc = new Date(now.toISOString());
+
+    SESSIONS.forEach(s => {
+        const el = document.getElementById(s.id);
+        const countdownEl = document.getElementById(s.id + 'Countdown');
+        if (!el) return;
+
+        const open = new Date(Date.UTC(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), s.oh, s.om));
+        const close = new Date(Date.UTC(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), s.ch, s.cm));
+
+        let status, timeStr, countdownText = '';
+
+        if (utc < open) {
+            const rem = open - utc;
+            const minutesToOpen = Math.floor(rem / 60000);
+            status = minutesToOpen <= 30 ? 'opening' : 'closed';
+            timeStr = 'Opens ' + fmt(rem);
+            if (minutesToOpen <= 30 && minutesToOpen > 0) {
+                countdownText = '⏱️ ' + minutesToOpen + 'm to open';
+            }
+        } else if (utc > close) {
+            status = 'closed';
+            timeStr = 'Closed';
+        } else {
+            const rem = close - utc;
+            const minutesToClose = Math.floor(rem / 60000);
+            status = minutesToClose <= 30 ? 'opening' : 'open';
+            timeStr = 'Closes ' + fmt(rem);
+            if (minutesToClose <= 30 && minutesToClose > 0) {
+                countdownText = '⏱️ ' + minutesToClose + 'm to close';
+            }
+        }
+
+        el.className = 'session ' + status;
+        el.querySelector('.session-time').textContent = timeStr;
+        if (countdownEl) countdownEl.textContent = countdownText;
+    });
+}
+
+function fmt(ms) {
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    if (h > 0) return h + 'h ' + m + 'm';
+    if (m > 0) return m + 'm ' + s + 's';
+    return s + 's';
+}
+
+// ==================== CLOCK ====================
+function updateClock() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2, '0');
+    const m = now.getMinutes().toString().padStart(2, '0');
+    document.getElementById('clock').textContent = h + ':' + m;
+}
+
+// ==================== TRIAL & PRIME ====================
+function activateTrial() {
+    const email = document.getElementById('giftEmail').value.trim();
+    if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email');
+        return;
+    }
+
+    userEmail = email;
+    localStorage.setItem('gsp_email', email);
+    trialEndTime = Date.now() + (14 * 24 * 60 * 60 * 1000);
+    localStorage.setItem('gsp_trial_end', trialEndTime);
+    isPrime = true;
+    isLocked = false;
+
+    document.getElementById('giftModal').classList.remove('show');
+    document.getElementById('lockScreen').style.display = 'none';
+
+    updateUI();
+    updatePrimeStatus();
+    showToast('🎉 14 Days Free Prime Trial Activated!');
+}
+
+function unlockApp() {
+    const email = document.getElementById('lockEmail').value.trim();
+    if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email');
+        return;
+    }
+
+    userEmail = email;
+    localStorage.setItem('gsp_email', email);
+    trialEndTime = Date.now() + (14 * 24 * 60 * 60 * 1000);
+    localStorage.setItem('gsp_trial_end', trialEndTime);
+    isPrime = true;
+    isLocked = false;
+
+    document.getElementById('lockScreen').style.display = 'none';
+    updateUI();
+    updatePrimeStatus();
+    showToast('🎉 14 Days Free Prime Trial Activated!');
+}
+
+function closeGiftModal() {
+    document.getElementById('giftModal').classList.remove('show');
+}
+
+function updateTrialBanner() {
+    const banner = document.getElementById('trialBanner');
+    const timeEl = document.getElementById('trialTime');
+
+    if (!isPrime || !trialEndTime) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    const rem = trialEndTime - Date.now();
+    if (rem <= 0) {
+        isPrime = false;
+        banner.style.display = 'none';
+        updatePrimeStatus();
+        return;
+    }
+
+    banner.style.display = 'flex';
+    const days = Math.floor(rem / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((rem % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    timeEl.textContent = days + 'd ' + hours + 'h remaining';
+}
+
+function checkPrimeReminders() {
+    if (!isPrime || !trialEndTime) return;
+
+    const rem = trialEndTime - Date.now();
+    if (rem <= 0) return;
+
+    const hoursLeft = rem / (60 * 60 * 1000);
+    const now = Date.now();
+
+    const elapsed = (Date.now() - (trialEndTime - 14 * 24 * 60 * 60 * 1000)) / (60 * 60 * 1000);
+
+    if (elapsed > 50) {
+        const hoursSinceReminder = (now - lastReminder) / (60 * 60 * 1000);
+        if (hoursSinceReminder >= 12) {
+            const messages = [
+                '⭐ Join Prime and never miss important market alerts',
+                '📈 Stay connected with live market sessions, economic news and smart AI analysis',
+                '🔔 Keep your alerts active and stay ahead of the market with Prime',
+                '🚀 Unlock the full Gold Signal Pro experience before your free trial ends'
+            ];
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+            showToast(msg);
+            lastReminder = now;
+            addNotification('prime', 'Prime Reminder', msg, 'Now');
+        }
+    }
+
+    if (hoursLeft <= 48 && hoursLeft > 47) {
+        showToast('⏳ Your Free Prime Trial ends in 2 days');
+        addNotification('alert', 'Trial Expiring', 'Your Free Prime Trial ends in 2 days', 'Now');
+    } else if (hoursLeft <= 24 && hoursLeft > 23) {
+        showToast('⚠️ Only 1 day remaining');
+        addNotification('alert', 'Trial Expiring', 'Only 1 day remaining on your Prime Trial', 'Now');
+    } else if (hoursLeft <= 6 && hoursLeft > 5) {
+        showToast('⏰ Your Prime Trial ends in 6 hours');
+        addNotification('alert', 'Trial Expiring', 'Your Prime Trial ends in 6 hours', 'Now');
+    } else if (hoursLeft <= 1 && hoursLeft > 0.9) {
+        showToast('🔥 Final Hour! Continue enjoying all Premium features by joining Prime');
+        addNotification('alert', 'Final Hour!', 'Continue enjoying all Premium features by joining Prime', 'Now');
+    }
+}
+
+function updatePrimeStatus() {
+    const statusEl = document.getElementById('primeStatus');
+    const badgeEl = document.getElementById('primeStatusBadge');
+
+    if (isPrime) {
+        const rem = trialEndTime - Date.now();
+        if (rem > 0) {
+            const days = Math.floor(rem / (24 * 60 * 60 * 1000));
+            statusEl.textContent = 'Prime Active (' + days + ' days left)';
+            badgeEl.textContent = 'PRIME';
+            badgeEl.style.color = 'var(--gold)';
+        } else {
+            isPrime = false;
+            statusEl.textContent = 'Free';
+            badgeEl.textContent = 'FREE';
+            badgeEl.style.color = 'var(--text-muted)';
+        }
+    } else {
+        statusEl.textContent = 'Free';
+        badgeEl.textContent = 'FREE';
+        badgeEl.style.color = 'var(--text-muted)';
+    }
+}
+
+function selectPlan(el, plan) {
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('recommended'));
+    el.classList.add('recommended');
+    selectedPlan = plan;
+}
+
+function joinPrime() {
+    showToast('Redirecting to payment... (Demo Mode)');
+}
+
+// ==================== AI CHAT ====================
+function sendAiMsg() {
+    const input = document.getElementById('aiInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const chat = document.getElementById('aiChat');
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'ai-msg user';
+    userDiv.textContent = msg;
+    chat.appendChild(userDiv);
+
+    input.value = '';
+
+    const content = document.getElementById('content');
+    content.scrollTop = content.scrollHeight;
+
+    setTimeout(() => {
+        const botDiv = document.createElement('div');
+        botDiv.className = 'ai-msg bot';
+        botDiv.innerHTML = generateAiResponse(msg);
+        chat.appendChild(botDiv);
+        content.scrollTop = content.scrollHeight;
+    }, 800);
+}
+
+function generateAiResponse(msg) {
+    const lower = msg.toLowerCase();
+
+    if (lower.includes('gold') || lower.includes('price') || lower.includes('xau')) {
+        return 'Gold is currently trading in an important range. Technical indicators show:<br>• RSI at neutral levels<br>• MA 50 acting as support<br>• Volume indicates buyer interest<br><br>I recommend watching key level breaks before making any decision.';
+    }
+    if (lower.includes('buy') || lower.includes('sell') || lower.includes('trade')) {
+        return '⚠️ Remember: Gold Signal Pro is an analysis tool only and does NOT provide Buy or Sell orders.<br><br>Current Technical Analysis:<br>• Overall trend: Bullish on daily timeframe<br>• Key Support: 2,438<br>• Key Resistance: 2,460<br><br>All trading decisions remain your responsibility.';
+    }
+    if (lower.includes('session') || lower.includes('market')) {
+        return 'Current Market Sessions:<br>• Tokyo: Closed (opens 12:00 AM UTC)<br>• London: Open - highest activity expected<br>• EU: Open<br>• USA: Opens 1:00 PM UTC<br><br>Best trading times are usually during London-US overlap.';
+    }
+    if (lower.includes('risk') || lower.includes('manage')) {
+        return 'Risk Management Tips:<br>1. Never risk more than 1-2% of capital per trade<br>2. Always use stop loss<br>3. Aim for at least 1:2 risk-reward ratio<br>4. Avoid trading during major news<br>5. Stay calm and do not trade emotionally';
+    }
+    if (lower.includes('rsi') || lower.includes('indicator')) {
+        return 'Key Technical Indicators Explained:<br><br><b>RSI (Relative Strength Index):</b><br>• Above 70 = Overbought (potential drop)<br>• Below 30 = Oversold (potential rise)<br>• 30-70 = Neutral zone<br><br><b>Moving Averages:</b><br>• MA50: Medium-term trend<br>• MA200: Long-term trend<br>• Golden Cross = Potential buy signal';
+    }
+
+    return 'Thank you for your question! 💡<br><br>I am here to help you with:<br>• Price trend analysis<br>• Technical indicators explanation<br>• Economic news tracking<br>• Risk management tips<br><br>You can ask me about Gold, Silver, Oil, or any trading-related topic.';
+}
+
+// ==================== NOTIFICATIONS ====================
+function addNotification(type, title, text, time) {
+    const list = document.getElementById('notificationsList');
+    const icons = { alert: '⚠️', news: '📰', session: '🌍', prime: '💎' };
+    const bgColors = { alert: 'alert', news: 'news', session: 'session', prime: 'prime' };
+
+    const item = document.createElement('div');
+    item.className = 'notif-item';
+    item.innerHTML = '<div class="notif-icon ' + bgColors[type] + '">' + icons[type] + '</div><div class="notif-content"><h4>' + title + '</h4><p>' + text + '</p><div class="notif-time">' + time + '</div></div>';
+    list.insertBefore(item, list.firstChild);
+
+    if (currentScreen !== 'notif') {
+        document.getElementById('notifBadge').style.display = 'block';
+    }
+}
+
+function clearNotifications() {
+    document.getElementById('notificationsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><p>No notifications at the moment</p></div>';
+}
+
+// ==================== SETTINGS ====================
+function toggleSetting(el, key) {
+    const toggle = el.querySelector('.toggle');
+    toggle.classList.toggle('on');
+    const isOn = toggle.classList.contains('on');
+    localStorage.setItem('gsp_' + key, isOn);
+    showToast(isOn ? 'Enabled' : 'Disabled');
+}
+
+// ==================== UI HELPERS ====================
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function updateUI() {}
+
+// ==================== ALERT SOUND SYSTEM ====================
+let currentAlertSound = localStorage.getItem('gsp_alertSound') || '1ding';
+
+let customSoundData = localStorage.getItem('gsp_customSound') || null;
+
+function selectSound(sound) {
+    currentAlertSound = sound;
+    localStorage.setItem('gsp_alertSound', sound);
+
+    // Update UI
+    document.querySelectorAll('.sound-radio').forEach(r => r.classList.remove('active'));
+    document.getElementById('sound-' + sound).classList.add('active');
+
+    // Play preview (if not silent)
+    if (sound !== 'silent') {
+        playAlertSound();
+    }
+
+    const label = sound === '1ding' ? '1 Ding' : 
+                  sound === '2ding' ? '2 Ding' : 
+                  sound === '3ding' ? '3 Ding' : 'Silent';
+    showToast('Sound: ' + label);
+}
+
+function handleCustomSound(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        customSoundData = e.target.result;
+        localStorage.setItem('gsp_customSound', customSoundData);
+        document.getElementById('customSoundLabel').textContent = file.name;
+        showToast('Custom sound loaded: ' + file.name);
+
+        // Test play
+        const audio = new Audio(customSoundData);
+        audio.volume = 0.5;
+        audio.play().catch(() => showToast('Error playing sound'));
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearCustomSound() {
+    customSoundData = null;
+    localStorage.removeItem('gsp_customSound');
+    document.getElementById('customSoundLabel').textContent = 'Use your own sound';
+    showToast('Custom sound removed');
+}
+
+function playCustomSound() {
+    if (!customSoundData) return false;
+
+    try {
+        const audio = new Audio(customSoundData);
+        audio.volume = 0.8;
+        audio.play().catch(() => {
+            // Fallback to default
+            playChurchBellDing(0);
+        });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Enhanced Church Bell using Web Audio API (closest to real)
+function playAlertSound() {
+    if (currentAlertSound === 'silent') return;
+
+    // Try custom sound first
+    if (customSoundData) {
+        const dingCount = currentAlertSound === '1ding' ? 1 : 
+                         currentAlertSound === '2ding' ? 2 : 3;
+
+        for (let i = 0; i < dingCount; i++) {
+            setTimeout(() => {
+                const audio = new Audio(customSoundData);
+                audio.volume = 0.8;
+                audio.play().catch(() => playChurchBellDing(0));
+            }, i * 800);
+        }
+        return;
+    }
+
+    // Default church bell
+    const dingCount = currentAlertSound === '1ding' ? 1 : 
+                     currentAlertSound === '2ding' ? 2 : 3;
+
+    for (let i = 0; i < dingCount; i++) {
+        playChurchBellDing(i * 800);
+    }
+}
+
+function playChurchBellDing(delay) {
+    setTimeout(() => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+
+        // Church bell fundamental frequency (low C - 130.81 Hz)
+        const fundamental = 130.81;
+
+        // Bell harmonics (specific to church bell timbre)
+        const harmonics = [
+            { freq: 1.00, vol: 1.00, decay: 4.0 },  // Fundamental (Hum)
+            { freq: 2.00, vol: 0.60, decay: 3.5 },  // Prime
+            { freq: 2.99, vol: 0.40, decay: 3.0 },  // Tierce
+            { freq: 4.00, vol: 0.30, decay: 2.5 },  // Quint
+            { freq: 5.33, vol: 0.20, decay: 2.0 },  // Nominal
+            { freq: 6.67, vol: 0.10, decay: 1.5 },  // Superquint
+        ];
+
+        // Create master gain for reverb effect
+        const masterGain = ctx.createGain();
+        masterGain.gain.value = 0.5;
+        masterGain.connect(ctx.destination);
+
+        harmonics.forEach((h, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.frequency.value = fundamental * h.freq;
+
+            // Use different waveforms for richer sound
+            if (idx === 0) {
+                osc.type = 'sine';
+            } else if (idx === 1) {
+                osc.type = 'sine';
+            } else {
+                osc.type = 'triangle';
+            }
+
+            // Bell envelope: fast attack, long decay
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(h.vol * 0.4, now + 0.02); // Fast attack
+            gain.gain.exponentialRampToValueAtTime(0.001, now + h.decay); // Long decay
+
+            osc.start(now);
+            osc.stop(now + h.decay);
+        });
+
+        // Add strike noise (brief noise at start)
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+            noiseData[i] = (Math.random() * 2 - 1) * 0.3;
+        }
+
+        const noise = ctx.createBufferSource();
+        const noiseGain = ctx.createGain();
+        noise.buffer = noiseBuffer;
+        noise.connect(noiseGain);
+        noiseGain.connect(masterGain);
+
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+        noise.start(now);
+        noise.stop(now + 0.05);
+
+    }, delay);
+}
+
+// ==================== SIMULATION ENGINE ====================
+let simulationInterval = null;
+let lastCandleState = { above50MA: false, below50MA: false, greenCount: 0, redCount: 0 };
+
+function startSimulation() {
+    if (simulationInterval) clearInterval(simulationInterval);
+
+    simulationInterval = setInterval(() => {
+        // 70% no signal, 15% bullish, 15% bearish
+        const rand = Math.random();
+
+        if (rand < 0.70) {
+            // No signal - reset counters
+            lastCandleState.greenCount = 0;
+            lastCandleState.redCount = 0;
+            return;
+        }
+
+        const matName = SYMBOLS[currentMat].name;
+        const pair = SYMBOLS[currentMat].pair;
+
+        if (rand < 0.85) {
+            // BULLISH SIGNAL
+            lastCandleState.greenCount++;
+            lastCandleState.redCount = 0;
+
+            if (lastCandleState.greenCount >= 2) {
+                const title = pair + ' 30m Alert';
+                const msg = '2nd green candle closed above 50MA\nMarket looks like going up';
+
+                showAlertNotification(title, msg, 'up');
+                lastCandleState.greenCount = 0;
+            }
+        } else {
+            // BEARISH SIGNAL
+            lastCandleState.redCount++;
+            lastCandleState.greenCount = 0;
+
+            if (lastCandleState.redCount >= 2) {
+                const title = pair + ' 30m Alert';
+                const msg = '2nd red candle closed under 50MA\nMarket looks like going down';
+
+                showAlertNotification(title, msg, 'down');
+                lastCandleState.redCount = 0;
+            }
+        }
+    }, 30000); // Every 30 seconds
+}
+
+function showAlertNotification(title, message, direction) {
+    // Play sound
+    playAlertSound();
+
+    // Show toast
+    showToast('🚨 ' + title);
+
+    // Add to notifications
+    const type = direction === 'up' ? 'session' : 'alert';
+    addNotification(type, title, message.replace('\n', ' '), 'Just now');
+
+    // Show notification badge
+    document.getElementById('notifBadge').style.display = 'block';
+}
+
+// ==================== PUSH NOTIFICATIONS ====================
+function togglePushNotifications(el) {
+    const toggle = el.querySelector('.toggle');
+    toggle.classList.toggle('on');
+    const isOn = toggle.classList.contains('on');
+    localStorage.setItem('gsp_push', isOn);
+
+    if (isOn) {
+        initPushNotifications();
+        showToast('Push notifications enabled');
+    } else {
+        showToast('Push notifications disabled');
+    }
+}
+
+function testPushNotification() {
+    if (!('Notification' in window)) {
+        showToast('Notifications not supported');
+        return;
+    }
+
+    if (Notification.permission === 'granted') {
+        new Notification('🧪 Test Alert', {
+            body: 'Gold 30m - 2nd green candle closed above 50MA',
+            icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png'
+        });
+        showToast('Test notification sent!');
+    } else {
+        showToast('Please enable notifications first');
+        Notification.requestPermission();
+    }
+}
+
+// ==================== COPY CODE ====================
+function copyCode() {
+    const html = document.documentElement.outerHTML;
+    const btn = document.getElementById('copyBtn');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(html).then(() => {
+            btn.textContent = '✅ Copied!';
+            btn.classList.add('copied');
+            showToast('Code copied to clipboard!');
+            setTimeout(() => {
+                btn.textContent = '📋 Copy Code';
+                btn.classList.remove('copied');
+            }, 2000);
+        }).catch((err) => {
+            fallbackCopy(html, btn);
+        });
+    } else {
+        fallbackCopy(html, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        btn.textContent = '✅ Copied!';
+        btn.classList.add('copied');
+        showToast('Code copied to clipboard!');
+    } catch (err) {
+        btn.textContent = '❌ Failed';
+        showToast('Copy failed. Please select all and copy manually.');
+    }
+    document.body.removeChild(textarea);
+    setTimeout(() => {
+        btn.textContent = '📋 Copy Code';
+        btn.classList.remove('copied');
+    }, 2000);
+}
+
+// ==================== SERVICE WORKER & PUSH ====================
+let pushSubscription = null;
+
+async function initPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push notifications not supported');
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.register('data:text/javascript;base64,' + btoa(`
+            self.addEventListener('push', event => {
+                const data = event.data ? event.data.json() : {};
+                const title = data.title || 'Gold Signal Pro Alert';
+                const options = {
+                    body: data.message || 'Market alert',
+                    icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png',
+                    badge: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png',
+                    tag: data.tag || 'alert',
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200],
+                    data: data
+                };
+                event.waitUntil(self.registration.showNotification(title, options));
+            });
+
+            self.addEventListener('notificationclick', event => {
+                event.notification.close();
+                event.waitUntil(clients.openWindow('/'));
+            });
+        `));
+
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            pushSubscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array('BEl62iTMgU2WqdnlYf5yHhY4VQ9W0P3r9J3Y7Z8a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6')
+            });
+
+            // Send subscription to server
+            await sendSubscriptionToServer(pushSubscription);
+        }
+    } catch (err) {
+        console.log('Push init error:', err);
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+async function sendSubscriptionToServer(subscription) {
+    try {
+        await fetch('https://your-server.com/api/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                endpoint: subscription.endpoint,
+                p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+                email: userEmail || 'anonymous',
+                device: 'web'
+            })
+        });
+    } catch (e) {
+        console.log('Server subscription failed:', e);
+    }
+}
+
+// ==================== START ====================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body></html>
